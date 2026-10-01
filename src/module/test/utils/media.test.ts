@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mediaItemFieldsFromKey } from '../../src/utils/media'
+import { mediaItemFieldsFromKey } from '../../src/runtime/utils/media'
 
 describe('mediaItemFieldsFromKey', () => {
   it('should derive fields from a root-level key', () => {
