@@ -1,5 +1,5 @@
 import type { Storage } from 'unstorage'
-import { mediaItemFieldsFromKey } from './runtime/utils/media'
+import { mediaItemFieldsFromKey } from './utils/media'
 
 export async function getAssetsDefaultStorageDevTemplate() {
   return [
