@@ -1,8 +1,8 @@
 import { streamText } from 'ai'
-import { createGateway } from '@ai-sdk/gateway'
 import { eventHandler, readBody, createError } from 'h3'
 import { useRuntimeConfig } from '#imports'
 import { getCommitSystem } from '../../utils/ai/generate'
+import { resolveAIModel } from '../../utils/ai/gateway'
 import { requireStudioAuth } from '../../utils/auth'
 
 export default eventHandler(async (event) => {
@@ -10,11 +10,12 @@ export default eventHandler(async (event) => {
 
   const config = useRuntimeConfig(event)
 
-  const apiKey = config.studio?.ai?.apiKey
+  const aiConfig = config.studio?.ai
+  const apiKey = aiConfig?.apiKey
   if (!apiKey) {
     throw createError({
       statusCode: 503,
-      statusMessage: 'AI features are not enabled. Please set AI_GATEWAY_API_KEY environment variable.',
+      statusMessage: 'AI features are not enabled. Please set NUXT_STUDIO_AI_API_KEY environment variable.',
     })
   }
 
@@ -29,10 +30,8 @@ export default eventHandler(async (event) => {
 
   const messagePrefix = config.public.studio?.git?.commit?.messagePrefix || undefined
 
-  const gateway = createGateway({ apiKey })
-
   return streamText({
-    model: gateway.languageModel('anthropic/claude-haiku-4.5'),
+    model: resolveAIModel(aiConfig, 'commit'),
     system: getCommitSystem(messagePrefix),
     prompt: changes,
     maxOutputTokens: 60,

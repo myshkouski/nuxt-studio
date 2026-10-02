@@ -11,6 +11,18 @@ import type { CommandConfig } from '../../app/src/types/editor'
 
 const logger = useLogger('nuxt-studio')
 
+const AI_MODELS_OPENAI = {
+  complete: 'gpt-4o-mini',
+  transform: 'gpt-4o',
+  commit: 'gpt-4o-mini',
+}
+
+const AI_MODELS_VERCEL = {
+  complete: 'anthropic/claude-haiku-4.5',
+  transform: 'anthropic/claude-sonnet-4.5',
+  commit: 'anthropic/claude-haiku-4.5',
+}
+
 interface EditorOptions {
   /**
    * Commands to exclude from the editor.
@@ -158,12 +170,54 @@ export interface ModuleOptions {
    */
   ai?: {
     /**
-     * The Vercel AI Gateway key for AI features.
+     * The API key for AI features.
      * When set, AI-powered content generation will be enabled.
      *
      * Set via `NUXT_STUDIO_AI_API_KEY` environment variable at runtime.
      */
     apiKey?: string
+    /**
+     * The AI provider used for all AI requests.
+     *
+     * - `vercel`: Vercel AI Gateway (default)
+     * - `openai`: the official OpenAI API, or any OpenAI-compatible API (Ollama, LM Studio, vLLM, OpenRouter, ...)
+     *
+     * @default 'vercel'
+     */
+    provider?: 'vercel' | 'openai'
+    /**
+     * Base URL of the AI provider API.
+     * Defaults to the official OpenAI endpoint (`https://api.openai.com/v1`) for `openai`.
+     * Set to target another OpenAI-compatible API (e.g. `http://localhost:11434/v1` for Ollama).
+     * Optional for `vercel`, defaults to the Vercel AI Gateway.
+     */
+    baseUrl?: string
+    /**
+     * Custom headers sent with every AI request.
+     * Use this for providers requiring extra auth or routing headers.
+     */
+    headers?: Record<string, string>
+    /**
+     * Model overrides per role. Falls back to provider defaults when omitted.
+     */
+    models?: {
+      /**
+       * Fast model used for inline completions (continue mode).
+       */
+      complete?: string
+      /**
+       * Higher quality model used for transform and analyze modes.
+       */
+      transform?: string
+      /**
+       * Model used to generate commit messages.
+       */
+      commit?: string
+      /**
+       * Model used for every role that has no explicit model.
+       */
+      default?: string
+    }
     /**
      * Contextual information to guide AI content generation.
      */
@@ -518,6 +572,15 @@ export default defineNuxtModule<ModuleOptions>({
       options.media!.publicUrl = resolve(nuxt.options.rootDir, 'public')
     }
 
+    // Default model ids depend on the provider (`vercel` by default).
+    // Kept in runtimeConfig so `NUXT_STUDIO_AI_MODELS_*` can still override them.
+    const isAIVercelProvider = options.ai?.provider !== 'openai'
+    const defaultAIModels = isAIVercelProvider ? AI_MODELS_VERCEL : AI_MODELS_OPENAI
+    const aiModels = options.ai?.models
+    // A user-provided `default` outranks the built-in provider defaults,
+    // so per-role entries are left empty for the runtime to fill in.
+    const resolveAIModel = (role: keyof typeof AI_MODELS_VERCEL) => aiModels?.[role] || (aiModels?.default ? '' : defaultAIModels[role])
+
     // Public runtime config
     nuxt.options.runtimeConfig.public.studio = {
       route: options.route!,
@@ -552,6 +615,17 @@ export default defineNuxtModule<ModuleOptions>({
     nuxt.options.runtimeConfig.studio = {
       ai: {
         apiKey: options.ai?.apiKey || '',
+        // Empty defaults so `NUXT_STUDIO_AI_*` runtime overrides still apply;
+        // an unset provider falls back to 'vercel' and models to provider defaults.
+        provider: options.ai?.provider || '',
+        baseUrl: options.ai?.baseUrl || '',
+        headers: options.ai?.headers || {},
+        models: {
+          default: aiModels?.default || '',
+          complete: resolveAIModel('complete'),
+          transform: resolveAIModel('transform'),
+          commit: resolveAIModel('commit'),
+        },
         context: options.ai?.context as never,
         experimental: options.ai?.experimental,
       },

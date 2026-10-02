@@ -52,6 +52,7 @@
   },
   "dependencies": {
     "@ai-sdk/gateway": "^3.0.126",
+    "@ai-sdk/openai-compatible": "^3.0.62",
     "@ai-sdk/vue": "^3.0.198",
     "@iconify-json/lucide": "^1.2.111",
     "@vueuse/core": "^14.3.0",
