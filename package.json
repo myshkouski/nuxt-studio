@@ -51,12 +51,12 @@
     "ipx": "^3.1.1"
   },
   "dependencies": {
-    "@ai-sdk/gateway": "^3.0.126",
+    "@ai-sdk/gateway": "^4.0.103",
     "@ai-sdk/openai-compatible": "^3.0.62",
-    "@ai-sdk/vue": "^3.0.198",
+    "@ai-sdk/vue": "^4.0.127",
     "@iconify-json/lucide": "^1.2.111",
     "@vueuse/core": "^14.3.0",
-    "ai": "^6.0.198",
+    "ai": "^7.0.127",
     "comark": "^0.6.2",
     "defu": "^6.1.7",
     "destr": "^2.0.5",
